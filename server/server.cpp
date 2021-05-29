@@ -48,7 +48,7 @@ int main(int argc, char** argv)
     }
     std::cout << "before write!  client_sock:"<< client_sock <<" server_sock:"<< server_sock <<"\n";
     write(client_sock, message.c_str(),message.size());
-    std::cout << "Hello World!\n";
+    std::cout << "Hello World! \n";
     close(server_sock);
     close(client_sock);
     
