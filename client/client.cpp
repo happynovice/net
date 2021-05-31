@@ -21,7 +21,9 @@ int main(int argc,char **argv )
     int client_sock;
     struct sockaddr_in server_addr;
     struct sockaddr_in client_addr;
-    std::string message = "hello world!";
+    
+    //message.reserve(50);
+        // = "hello world!";
     if (argc != 3) {
         std::cout << "port:"<<argv[0]<<"\n";
         return 0;
@@ -30,22 +32,35 @@ int main(int argc,char **argv )
     if (client_sock == -1) {
         std::cout << "socket error \n";
     }
-    memset(&client_addr,0,sizeof(client_addr));
+    memset(&client_addr, 0, sizeof(client_addr));
     client_addr.sin_family = AF_INET;
     client_addr.sin_addr.s_addr = inet_addr(argv[1]);
     client_addr.sin_port = htons(atoi(argv[2]));
     if (connect(client_sock, (struct sockaddr*)&client_addr, sizeof(client_addr)) == -1) {
         std::cout << "connect error \n";
     }
-    std::cout << "client_sock:" << client_sock << "\n";
-    int str_len = read(client_sock,(void *)message.c_str(),message.length());
-    if (str_len == -1) {
-        std::cout << "read error \n";
+    while (1) {
+
+        std::string message;
+        std::cin >> message;
+        std::cout << "client_sock:" << client_sock << "\n";
+        int ret=write(client_sock, (void*)message.c_str(), message.length());
+
+        std::cout << "message from client to server : " << message << "\n";
+        //int str_len = read(client_sock, (void*)message.c_str(), message.length());
+        //std::cout << "message from server to client : " << message << "\n";
+        if (ret < 0 || message == "quit") {
+            break;
+        }
     }
-    std::cout << "message from server: "<< message <<"\n";
+    //int str_len = read(client_sock, (void*)message.c_str(), message.length());
+    //if (str_len == -1) {
+    //    std::cout << "read error \n";
+    //}
+    
 
     close(client_sock);
-    std::cout << "Hello World!\n";
+    //std::cout << "Hello World!\n";
 }
 
 // 运行程序: Ctrl + F5 或调试 >“开始执行(不调试)”菜单

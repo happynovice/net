@@ -21,7 +21,7 @@ int main(int argc, char** argv)
     int client_sock;
     struct sockaddr_in server_addr;
     struct sockaddr_in client_addr;
-    std::string message = "hello world!";
+    // = "hello world!";
     if (argc != 2) {
         std::cout << "port:" << argv[0] << "\n";
         return 0;
@@ -29,6 +29,7 @@ int main(int argc, char** argv)
     server_sock = socket(PF_INET, SOCK_STREAM, 0);
     if (server_sock == -1) {
         std::cout << "socket error \n";
+        return 0;
     }
     std::cout <<" server_sock:" << server_sock << "\n";
     memset(&server_addr, 0, sizeof(server_addr));
@@ -36,19 +37,38 @@ int main(int argc, char** argv)
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     server_addr.sin_port = htons(atoi(argv[1]));
     if (bind(server_sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1){
-    std::cout << "bind error \n";
+        std::cout << "bind error \n";
+        return 0;
     }
     if (listen(server_sock, 5) == -1) {
         std::cout << "listen error \n";
+        close(server_sock);
+        return 0;
     }
     socklen_t client_addr_size = sizeof(client_addr);
-    client_sock = accept(server_sock, (struct sockaddr*)&client_addr, & client_addr_size);
+    client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &client_addr_size);
     if (client_sock == -1) {
         std::cout << "accept error \n";
     }
-    std::cout << "before write!  client_sock:"<< client_sock <<" server_sock:"<< server_sock <<"\n";
-    write(client_sock, message.c_str(),message.size());
-    std::cout << "Hello World! \n";
+
+    while (1) {
+
+        std::string message;
+        std::string tmp_str(10,0);
+        //tmp_str.reserve(10);
+        //while ()) {
+        //    message += tmp_str;
+        //    std::cout << "tmp_str:"<< tmp_str<<" message:"<< message<<"\n";
+        //}
+        read(client_sock, (void*)tmp_str.c_str(), tmp_str.size());
+        std::cout << "client_sock:" << client_sock << " server_sock:" << server_sock <<" tmp_str:"<< tmp_str << "\n";
+        //write(client_sock, message.c_str(), message.length());
+        //std::cout << "Hello World! \n";
+        if (tmp_str.compare(0,4,"quit")==0) {
+            break;
+        }
+    }
+
     close(server_sock);
     close(client_sock);
     
