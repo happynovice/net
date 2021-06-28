@@ -46,31 +46,25 @@ int main(int argc, char** argv)
         return 0;
     }
     socklen_t client_addr_size = sizeof(client_addr);
-    client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &client_addr_size);
-    if (client_sock == -1) {
-        std::cout << "accept error \n";
-    }
-
-    while (1) {
-
-        std::string message;
-        std::string tmp_str(10,0);
-        //tmp_str.reserve(10);
-        //while ()) {
-        //    message += tmp_str;
-        //    std::cout << "tmp_str:"<< tmp_str<<" message:"<< message<<"\n";
-        //}
-        read(client_sock, (void*)tmp_str.c_str(), tmp_str.size());
-        std::cout << "client_sock:" << client_sock << " server_sock:" << server_sock <<" tmp_str:"<< tmp_str << "\n";
-        //write(client_sock, message.c_str(), message.length());
-        //std::cout << "Hello World! \n";
-        if (tmp_str.compare(0,4,"quit")==0) {
-            break;
+    int str_len = 0;
+    std::string str (10,0);
+    for (int i = 0; i < 5; i++) {
+        client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &client_addr_size);
+        if (client_sock == -1) {
+            std::cout << "accept error \n";
         }
+        else {
+            std::cout << "accept success client_sock:"<< client_sock <<" \n";
+        }
+        while ((str_len = read(client_sock, (void *)str.c_str(), str.size()))!=0){
+            write(client_sock,str.c_str(), str_len);
+            std::cout << "client_sock:"<< client_sock <<" str:"<<str<<"\n";
+        }
+        std::cout << "close client_sock:" << client_sock << " \n";
+        close(client_sock);
     }
-
+    
     close(server_sock);
-    close(client_sock);
     
 }
 

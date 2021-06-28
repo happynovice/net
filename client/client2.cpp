@@ -37,6 +37,7 @@ int main(int argc, char** argv)
     if (connect(client_sock, (struct sockaddr*)&client_addr, sizeof(client_addr)) == -1) {
         std::cout << "connect error \n";
     }
+
     int str_len = 0;
     int read_len = 0;
     int index = 0;

@@ -47,8 +47,8 @@ int main(int argc,char **argv )
         int ret=write(client_sock, (void*)message.c_str(), message.length());
 
         std::cout << "message from client to server : " << message << "\n";
-        //int str_len = read(client_sock, (void*)message.c_str(), message.length());
-        //std::cout << "message from server to client : " << message << "\n";
+        int str_len = read(client_sock, (void*)message.c_str(), message.length());
+        std::cout << "message from server to client : " << message << "\n";
         if (ret < 0 || message == "quit") {
             break;
         }
