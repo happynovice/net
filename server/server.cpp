@@ -56,9 +56,16 @@ int main(int argc, char** argv)
         else {
             std::cout << "accept success client_sock:"<< client_sock <<" \n";
         }
-        while ((str_len = read(client_sock, (void *)str.c_str(), str.size()))!=0){
-            write(client_sock,str.c_str(), str_len);
-            std::cout << "client_sock:"<< client_sock <<" str:"<<str<<"\n";
+        pid_t pid=fork();
+        if (pid == 0) {
+            close(server_sock);
+            while ((str_len = read(client_sock, (void*)str.c_str(), str.size())) != 0) {
+                write(client_sock, str.c_str(), str_len);
+                std::cout << "client_sock:" << client_sock << " str:" << str << "\n";
+            }
+        }
+        else {
+            close(client_sock);
         }
         std::cout << "close client_sock:" << client_sock << " \n";
         close(client_sock);
