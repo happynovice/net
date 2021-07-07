@@ -39,20 +39,33 @@ int main(int argc,char **argv )
     if (connect(client_sock, (struct sockaddr*)&client_addr, sizeof(client_addr)) == -1) {
         std::cout << "connect error \n";
     }
-    while (1) {
+    std::string message(20,0);
+    pid_t pid=fork();
+    if (pid == 0) {
+        while (1) {
 
-        std::string message;
-        std::cin >> message;
-        std::cout << "client_sock:" << client_sock << "\n";
-        int ret=write(client_sock, (void*)message.c_str(), message.length());
-
-        std::cout << "message from client to server : " << message << "\n";
-        int str_len = read(client_sock, (void*)message.c_str(), message.length());
-        std::cout << "message from server to client : " << message << "\n";
-        if (ret < 0 || message == "quit") {
-            break;
+            std::cin >> message;
+            std::cout << "client_sock:" << client_sock << "\n";
+            int ret = write(client_sock, (void*)message.c_str(), message.length());
+            if (ret < 0 || message == "quit") {
+                break;
+            }
+            std::cout << "message from client to server : " << message << "\n";
+        }
+        close(client_sock);
+    }
+    else {
+        while (1) {
+            int str_len = read(client_sock, (void*)message.c_str(), message.length());
+            std::cout << "message from server to client : " << message << "\n";
+            if (str_len < 0 || message == "quit") {
+                break;
+            }
+            message.clear();
         }
     }
+    
+
     //int str_len = read(client_sock, (void*)message.c_str(), message.length());
     //if (str_len == -1) {
     //    std::cout << "read error \n";
