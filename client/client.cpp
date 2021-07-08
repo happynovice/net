@@ -43,7 +43,6 @@ int main(int argc,char **argv )
     pid_t pid=fork();
     if (pid == 0) {
         while (1) {
-
             std::cin >> message;
             std::cout << "client_sock:" << client_sock << "\n";
             int ret = write(client_sock, (void*)message.c_str(), message.length());

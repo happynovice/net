@@ -47,30 +47,58 @@ int main(int argc, char** argv)
     }
     socklen_t client_addr_size = sizeof(client_addr);
     int str_len = 0;
-    std::string str (10,0);
-    for (int i = 0; i < 5; i++) {
-        client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &client_addr_size);
-        if (client_sock == -1) {
-            std::cout << "accept error \n";
+    std::string str (30,0);
+    fd_set tmpfd ,fd;
+    FD_ZERO(&fd);
+    FD_SET(server_sock, &fd);
+    struct timeval timeout;
+    int maxcon = server_sock;
+    while (1) {
+        tmpfd = fd;
+        timeout.tv_sec = 5;
+        timeout.tv_usec = 0;
+        int selectret=select(maxcon + 1, &tmpfd, 0, 0, &timeout);
+        if (selectret == 0) {
+            std::cout << "time out:"  << " \n";
+            continue;
         }
-        else {
-            std::cout << "accept success client_sock:"<< client_sock <<" \n";
+        else if(selectret == -1){
+            std::cout << "selectret:" << selectret << " \n";
+            break;
         }
-        pid_t pid=fork();
-        if (pid == 0) {
-            close(server_sock);
-            while ((str_len = read(client_sock, (void*)str.c_str(), str.size())) != 0) {
-                write(client_sock, str.c_str(), str_len);
-                std::cout << "client_sock:" << client_sock << " str:" << str << "\n";
+        std::cout << "selectret:"<< selectret <<" maxcon:"<< maxcon <<" \n";
+        for (int i = 0; i < maxcon+1; i++) {
+            if (FD_ISSET(i, &tmpfd)) {
+                if (i == server_sock) {
+                    client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &client_addr_size);
+                    FD_SET(client_sock,&tmpfd);
+                    if (client_sock > maxcon) {
+                        maxcon = client_sock;
+                    }
+                    std::cout << "accept success client_sock:" << client_sock << " \n";
+                }
+                else {
+                    pid_t pid=fork();
+                    if (pid == 0) {
+                        close(server_sock);
+                        while ((str_len = read(i, (void*)str.c_str(), str.size())) != 0) {
+                            std::cout << "client_sock:" << i << " str:" << str << "\n";
+                            write(i, str.c_str(), str_len);
+                            memset((void *)str.c_str(),0, str.size());
+                        }
+                        {
+                            FD_CLR(i, &tmpfd);
+                            close(i);
+                            std::cout << "close client_sock:" << client_sock << " \n";
+                        }
+                    }
+                    else {
+                        close(i);
+                    }
+                }
             }
         }
-        else {
-            close(client_sock);
-        }
-        std::cout << "close client_sock:" << client_sock << " \n";
-        close(client_sock);
     }
-    
     close(server_sock);
     
 }
