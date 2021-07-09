@@ -14,6 +14,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <sys/epoll.h>
 #endif
 int main(int argc, char** argv)
 {
@@ -48,59 +49,65 @@ int main(int argc, char** argv)
     socklen_t client_addr_size = sizeof(client_addr);
     int str_len = 0;
     std::string str (30,0);
-    fd_set tmpfd ,fd;
-    FD_ZERO(&fd);
-    FD_SET(server_sock, &fd);
-    struct timeval timeout;
-    int maxcon = server_sock;
+    int epoll_size = 50;
+
+    int epfd=epoll_create(epoll_size);
+    int event_cnt = 0;
+    struct epoll_event epevent;
+    struct epoll_event* p_epevents;
+    p_epevents = (struct epoll_event*)malloc(sizeof(epoll_event)* epoll_size);
+    epevent.events = EPOLLIN;
+    epevent.data.fd = server_sock;
+    epoll_ctl(epfd,EPOLL_CTL_ADD,server_sock,&epevent);
+
     while (1) {
-        tmpfd = fd;
-        timeout.tv_sec = 5;
-        timeout.tv_usec = 0;
-        int selectret=select(maxcon + 1, &tmpfd, 0, 0, &timeout);
-        if (selectret == 0) {
+        int event_cnt =epoll_wait(epfd, p_epevents, epoll_size,5000000);
+        if (event_cnt == 0) {
             std::cout << "time out:"  << " \n";
             continue;
         }
-        else if(selectret == -1){
-            std::cout << "selectret:" << selectret << " \n";
+        else if(event_cnt == -1){
+            std::cout << "event_cnt:" << event_cnt << " \n";
             break;
         }
-        std::cout << "selectret:"<< selectret <<" maxcon:"<< maxcon <<" \n";
-        for (int i = 0; i < maxcon+1; i++) {
-            if (FD_ISSET(i, &tmpfd)) {
-                if (i == server_sock) {
-                    client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &client_addr_size);
-                    FD_SET(client_sock,&tmpfd);
-                    if (client_sock > maxcon) {
-                        maxcon = client_sock;
-                    }
-                    std::cout << "accept success client_sock:" << client_sock << " \n";
-                }
-                else {
-                    pid_t pid=fork();
-                    if (pid == 0) {
-                        close(server_sock);
-                        while ((str_len = read(i, (void*)str.c_str(), str.size())) != 0) {
-                            std::cout << "client_sock:" << i << " str:" << str << "\n";
-                            write(i, str.c_str(), str_len);
-                            memset((void *)str.c_str(),0, str.size());
-                        }
-                        {
-                            FD_CLR(i, &tmpfd);
-                            close(i);
-                            std::cout << "close client_sock:" << client_sock << " \n";
-                        }
-                    }
-                    else {
-                        close(i);
-                    }
-                }
+        std::cout << "selectret:"<< event_cnt  <<" \n";
+        
+        for (int i = 0; i < event_cnt; i++) {
+            
+            if (p_epevents[i].data.fd==server_sock) {
+                client_sock = accept(server_sock, (struct sockaddr*)&client_addr, &client_addr_size);
+                epevent.events = EPOLLIN;
+                epevent.data.fd = client_sock;
+                epoll_ctl(epfd,EPOLL_CTL_ADD,client_sock,&epevent);
+                std::cout << "accept success client_sock:" << client_sock << " \n";
             }
+            else {
+                if ((str_len = read(p_epevents[i].data.fd, (void*)str.c_str(), str.size())) != 0) {
+                    std::cout << "client_sock:" << p_epevents[i].data.fd << " str:" << str << "\n";
+                    write(p_epevents[i].data.fd, str.c_str(), str_len);
+                    memset((void*)str.c_str(), 0, str.size());
+                }
+                else
+                {
+                    epoll_ctl(epfd, EPOLL_CTL_DEL, p_epevents[i].data.fd, NULL);
+                    close(p_epevents[i].data.fd);
+                    std::cout << "close client_sock:" << client_sock << " \n";
+                }
+                //pid_t pid = fork();
+                //if (pid == 0) {
+                //    close(server_sock);
+
+                //    exit(0);
+                //}
+                //else {
+                //    //close(p_epevents[i].data.fd);
+                //}
+            }
+            
         }
     }
     close(server_sock);
-    
+    close(epfd);
 }
 
 // 运行程序: Ctrl + F5 或调试 >“开始执行(不调试)”菜单

@@ -52,6 +52,7 @@ int main(int argc,char **argv )
             std::cout << "message from client to server : " << message << "\n";
         }
         close(client_sock);
+        exit(0);
     }
     else {
         while (1) {
